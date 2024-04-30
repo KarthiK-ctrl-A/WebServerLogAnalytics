@@ -1,0 +1,8 @@
+web_server_log_analytics_default
+
+docker run -v $PWD/pinot/config:/config --network web_server_log_analytics_default apachepinot/pinot:0.11.0 AddTable -schemaFile /config/schema.json -tableConfigFile /config/table.json -controllerHost pinot-controller -exec
+
+docker exec -it superset superset fab create-admin --username admin --firstname Superset --lastname Admin --email admin@superset.com --password admin
+
+docker exec -it superset superset db upgrade
+docker exec -it superset superset init

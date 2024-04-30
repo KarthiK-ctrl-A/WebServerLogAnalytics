@@ -1,0 +1,51 @@
+version: '3.7'
+services:
+  zookeeper:
+    image: zookeeper:3.5.6
+    hostname: zookeeper
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+  kafka:
+    image: wurstmeister/kafka:latest
+    restart: unless-stopped
+    container_name: "kafka"
+    ports:
+      - "9092:9092"
+    expose:
+      - "9093"
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181/kafka
+      KAFKA_BROKER_ID: 0
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9093,OUTSIDE://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,OUTSIDE:PLAINTEXT
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:8.3.3
+    command: filebeat -e -strict.perms=false
+    container_name: filebeat
+    volumes:
+      - ./config/filebeat.yml:/usr/share/filebeat/filebeat.yml
+      - ./access-logs:/var/log/apache2
+  pinot-controller:
+    image: apachepinot/pinot:0.11.0
+    command: "QuickStart -type EMPTY"
+    container_name: "pinot-controller"
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "8000:8000"
+    depends_on:
+      - zookeeper
+  superset:
+    image: apachepinot/pinot-superset:latest
+    container_name: "superset"
+    restart: unless-stopped
+    ports:
+      - "8088:8088"    
